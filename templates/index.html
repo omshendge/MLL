@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌦️ Smart Crop Recommendation System</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Reset & base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #a5d6a7);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #2e7d32;
+      margin-bottom: 10px;
+      text-align: center;
+      font-size: 2rem;
+    }
+
+    p.description {
+      text-align: center;
+      color: #1b5e20;
+      max-width: 600px;
+      margin-bottom: 30px;
+      font-weight: 500;
+    }
+
+    /* Form */
+    form {
+      background: #ffffffcc;
+      padding: 30px 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      color: #2e7d32;
+      margin-top: 15px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button#submitBtn {
+      background-color: #43a047;
+      color: white;
+    }
+
+    button#submitBtn:hover {
+      background-color: #2e7d32;
+    }
+
+    button.geo-btn {
+      background-color: #0288d1;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    button.geo-btn:hover {
+      background-color: #01579b;
+    }
+
+    /* Result box */
+    .result-box {
+      display: none;
+      background: #ffffffcc;
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .result-box h3 {
+      text-align: center;
+      color: #1b5e20;
+      margin-bottom: 15px;
+    }
+
+    .crop-item {
+      margin: 10px 0;
+    }
+
+    .bar {
+      width: 100%;
+      background: #c8e6c9;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 14px;
+      margin-top: 5px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #43a047;
+      border-radius: 8px;
+      transition: width 0.5s;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 40px;
+      color: #1b5e20;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      form, .result-box {
+        padding: 20px;
+      }
+      input, button {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🌦️ Smart Crop Recommendation System</h1>
+  <p class="description">Enter soil and environmental data or use your location to get the top 3 recommended crops based on current weather conditions.</p>
+
+  <form id="cropForm">
+    <label for="N">Nitrogen (N)</label>
+    <input type="number" step="0.1" id="N" name="N" required>
+
+    <label for="P">Phosphorus (P)</label>
+    <input type="number" step="0.1" id="P" name="P" required>
+
+    <label for="K">Potassium (K)</label>
+    <input type="number" step="0.1" id="K" name="K" required>
+
+    <label for="ph">pH</label>
+    <input type="number" step="0.1" id="ph" name="ph" required>
+
+    <label for="temperature">Temperature (°C)</label>
+    <input type="number" step="0.1" id="temperature" name="temperature">
+
+    <label for="humidity">Humidity (%)</label>
+    <input type="number" step="0.1" id="humidity" name="humidity">
+
+    <label for="rainfall">Rainfall (mm)</label>
+    <input type="number" step="0.1" id="rainfall" name="rainfall">
+
+    <label for="lat">Latitude (optional)</label>
+    <input type="number" step="0.0001" id="lat" name="lat">
+
+    <label for="lon">Longitude (optional)</label>
+    <input type="number" step="0.0001" id="lon" name="lon">
+
+    <button type="button" class="geo-btn" onclick="getLocation()">📍 Use My Location</button>
+    <button type="submit" id="submitBtn">🌾 Get Recommendations</button>
+  </form>
+
+  <div class="result-box" id="resultBox">
+    <h3>Recommended Crops</h3>
+    <div id="results"></div>
+  </div>
+
+  <div class="footer">© 2025 Weather-Aware Crop Recommendation | Built by Omkar Shendge</div>
+
+  <script>
+    const form = document.getElementById('cropForm');
+    const resultBox = document.getElementById('resultBox');
+    const resultsDiv = document.getElementById('results');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      const res = await fetch('/predict', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const response = await res.json();
+
+      if (response.status === 'success') {
+        resultBox.style.display = 'block';
+        resultsDiv.innerHTML = '';
+        response.recommendations.forEach(r => {
+          const div = document.createElement('div');
+          div.className = 'crop-item';
+          div.innerHTML = `
+            <strong>${r.crop}</strong> - ${r.confidence.toFixed(2)}%
+            <div class="bar"><div class="bar-fill" style="width:${r.confidence}%;"></div></div>
+          `;
+          resultsDiv.appendChild(div);
+        });
+      } else {
+        alert('Error: ' + response.message);
+      }
+    });
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            document.getElementById('lat').value = pos.coords.latitude.toFixed(4);
+            document.getElementById('lon').value = pos.coords.longitude.toFixed(4);
+            alert('📍 Location added successfully!');
+          },
+          (err) => alert('Error fetching location: ' + err.message)
+        );
+      } else {
+        alert('Geolocation not supported by this browser.');
+      }
+    }
+  </script>
+
+</body>
+</html>
